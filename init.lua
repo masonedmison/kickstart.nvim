@@ -157,6 +157,8 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+vim.opt.relativenumber = true
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -624,6 +626,48 @@ require('lazy').setup({
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
+        },
+      }
+
+      local on_attach = function(bufnr)
+        vim.api.nvim_create_autocmd('CursorHold', {
+          buffer = bufnr,
+          callback = function()
+            local opts = {
+              focusable = false,
+              close_events = { 'BufLeave', 'CursorMoved', 'InsertEnter', 'FocusLost' },
+              border = 'rounded',
+              source = 'always',
+              prefix = ' ',
+              scope = 'line',
+            }
+            vim.diagnostic.open_float(nil, opts)
+          end,
+        })
+      end
+
+      -- Non-supported Mason servers here...
+      require('lspconfig').nixd.setup {
+        -- do we need this?
+        on_attach = on_attach(),
+        capabilities = capabilities,
+        settings = {
+          nixd = {
+            nixpkgs = {
+              expr = 'import (builtins.getFlake "/home/edmisml/dotfiles").inputs.nixpkgs { }   ',
+            },
+            formatting = {
+              command = { 'nixpkgs-fmt' },
+            },
+            options = {
+              home_manager = {
+                expr = '(builtins.getFlake "/home/edmisml/dotfiles").homeConfigurations."edmisml@popos".options',
+              },
+              darwin = {
+                expr = '(builtins.getFlake "/home/edmisml/dotfiles").darwinConfigurations.edmisml.options',
+              },
+            },
+          },
         },
       }
     end,
